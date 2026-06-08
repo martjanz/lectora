@@ -5,3 +5,9 @@ books/
 
 # Original Anna's Archive viewer (source material, not part of this project)
 base project/
+
+# Internal design docs (superpowers plans/specs)
+docs/
+
+# Nested repo artifact
+lectora/

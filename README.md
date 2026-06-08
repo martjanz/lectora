@@ -2,11 +2,13 @@
 
 A single-file offline book reader for Anna's Archive ZIP+TXT books, with fallback support for PDF, EPUB, DjVu, and comic formats.
 
-No server required — open `reader.html` directly in any modern browser.
+No server required — open `index.html` directly in any modern browser.
+
+**[Try it live →](https://martjanz.github.io/lectora/)**
 
 ## Usage
 
-1. Open `reader.html` in your browser
+1. Open `index.html` in your browser (or use the [live version](https://martjanz.github.io/lectora/))
 2. Drop a book file onto the drop zone, or click to browse
 
 ## Supported Formats
@@ -56,7 +58,7 @@ Reading position and font/theme preferences are saved to `localStorage` per book
 ## Project Structure
 
 ```
-reader.html          — thin HTML shell, loads all scripts
+index.html           — thin HTML shell, loads all scripts
 src/
   cleanup.js         — pure OCR text-processing functions (no DOM)
   reader.js          — app state, routing, DOM event handling
@@ -72,6 +74,6 @@ Open `tests/prose-cleanup.test.html` in a browser. All results render inline —
 
 ## License
 
-The code in `src/` is released under the [MIT License](LICENSE).
+Lectora source code is licensed under [GPL-2.0](LICENSE).
 
-Third-party libraries in `vendor/` carry their own licenses — see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for details. Note that `djvu.js` and `djvu_viewer.js` are GPL-2.0, which has implications if you redistribute this project.
+Third-party libraries in `vendor/` carry their own licenses — see [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md) for details. The GPL-2.0 license was chosen because the bundled `djvu.js` / `djvu_viewer.js` are GPL-2.0, and their copyleft terms extend to the combined work.
