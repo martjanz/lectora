@@ -207,25 +207,29 @@
 
   async function loadZipOrBook(blob, filename) {
     const reader = new zip.ZipReader(new zip.BlobReader(blob));
-    let entries = await reader.getEntries();
-    entries.sort((a, b) => a.filename.localeCompare(b.filename));
+    try {
+      let entries = await reader.getEntries();
+      entries.sort((a, b) => a.filename.localeCompare(b.filename));
 
-    if (entries.length === 0) { displayError('Zip file is empty.'); return; }
-    if (!entries.every(e => e.filename.endsWith('.txt'))) {
-      loadWithVillain(blob);
-      return;
+      if (entries.length === 0) { displayError('Zip file is empty.'); return; }
+      if (!entries.every(e => !e.directory && e.filename.endsWith('.txt'))) {
+        loadWithVillain(new File([blob], filename || 'archive.zip', { type: blob.type }));
+        return;
+      }
+
+      const pages = [];
+      for (const entry of entries) {
+        const text = await entry.getData(new zip.TextWriter());
+        if (!isBlankPage(text)) pages.push(text);
+      }
+
+      if (pages.length === 0) { displayError('No readable pages found in this zip.'); return; }
+
+      const title = extractTitle(filename);
+      showReader(pages, filename, title);
+    } finally {
+      await reader.close();
     }
-
-    const pages = [];
-    for (const entry of entries) {
-      const text = await entry.getData(new zip.TextWriter());
-      if (!isBlankPage(text)) pages.push(text);
-    }
-
-    if (pages.length === 0) { displayError('No readable pages found in this zip.'); return; }
-
-    const title = extractTitle(filename);
-    showReader(pages, filename, title);
   }
 
   // Stub — replaced in Task 3
