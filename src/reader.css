@@ -20,11 +20,27 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, sans-s
 
 #drop-area {
   position: fixed; inset: 0; margin: 2rem;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
   cursor: pointer; border: 2px dashed var(--border); border-radius: 8px;
 }
 #drop-area.drag-over { background: color-mix(in srgb, var(--border) 20%, transparent); }
-#drop-area .hint { font-size: 13px; color: var(--accent); }
+#drop-logo {
+  font-size: 2.2rem; font-weight: 700; letter-spacing: -0.5px;
+  color: var(--text);
+}
+#drop-subtitle {
+  font-size: 14px; color: var(--accent); margin-top: -4px;
+}
+#drop-cta {
+  margin-top: 12px; font-size: 15px;
+}
+#drop-area .hint { font-size: 12px; color: var(--accent); letter-spacing: 0.02em; }
+#drop-footer {
+  position: absolute; bottom: 1rem;
+  font-size: 12px;
+}
+#drop-footer a { color: var(--accent); text-decoration: none; }
+#drop-footer a:hover { text-decoration: underline; }
 
 #error-popup {
   position: fixed; inset: 0; z-index: 200;
