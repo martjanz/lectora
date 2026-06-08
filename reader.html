@@ -293,6 +293,22 @@
     return parseInt(localStorage.getItem('lector_pos_' + filename)) || 0;
   }
 
+  function loadPrefs() {
+    try { return JSON.parse(localStorage.getItem('lector_prefs')) || {}; }
+    catch { return {}; }
+  }
+  function savePrefs() {
+    localStorage.setItem('lector_prefs', JSON.stringify({
+      fontSize: state.fontSize,
+      dark: state.dark,
+    }));
+  }
+  function applyPrefs() {
+    document.body.setAttribute('data-dark', state.dark);
+    document.documentElement.style.setProperty('--font-size', state.fontSize + 'px');
+    document.getElementById('dark-btn').textContent = state.dark ? '☾' : '☀';
+  }
+
   function rejoinHyphenatedBreaks(text) {
     return text.replace(/(\w)-\n(\w)/g, '$1$2');
   }
@@ -403,6 +419,10 @@
     state.pages = pages;
     state.filename = filename;
     state.mode = 'prose';
+    const prefs = loadPrefs();
+    state.fontSize = prefs.fontSize || 18;
+    state.dark = prefs.dark || false;
+    applyPrefs();
     state.currentPage = loadPosition(filename);
     if (state.currentPage < 0 || state.currentPage >= pages.length) state.currentPage = 0;
 
@@ -445,6 +465,16 @@
       updateUI();
     });
 
+    document.getElementById('font-dec').addEventListener('click', () => {
+      if (state.fontSize > 14) { state.fontSize--; applyPrefs(); savePrefs(); }
+    });
+    document.getElementById('font-inc').addEventListener('click', () => {
+      if (state.fontSize < 24) { state.fontSize++; applyPrefs(); savePrefs(); }
+    });
+    document.getElementById('dark-btn').addEventListener('click', () => {
+      state.dark = !state.dark; applyPrefs(); savePrefs();
+    });
+
     document.getElementById('progress-bar-container').addEventListener('click', e => {
       if (!state.pages.length) return;
       const rect = e.currentTarget.getBoundingClientRect();
@@ -463,6 +493,15 @@
       else if (e.key === 'Home') { state.currentPage = 0; renderCurrentPage(); updateUI(); savePosition(); }
       else if (e.key === 'End')  { state.currentPage = state.pages.length - 1; renderCurrentPage(); updateUI(); savePosition(); }
       else if (e.key === 'f') { state.mode = state.mode === 'prose' ? 'faithful' : 'prose'; renderCurrentPage(); updateUI(); }
+      else if (e.key === 'd') {
+        state.dark = !state.dark; applyPrefs(); savePrefs();
+      }
+      else if (e.key === '+' || e.key === '=') {
+        if (state.fontSize < 24) { state.fontSize++; applyPrefs(); savePrefs(); }
+      }
+      else if (e.key === '-') {
+        if (state.fontSize > 14) { state.fontSize--; applyPrefs(); savePrefs(); }
+      }
     });
   });
 </script>
