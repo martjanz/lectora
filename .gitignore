@@ -1,0 +1,7 @@
+.DS_Store
+
+# Local book files — not for version control
+books/
+
+# Original Anna's Archive viewer (source material, not part of this project)
+base project/

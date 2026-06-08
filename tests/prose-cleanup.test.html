@@ -10,150 +10,154 @@
     .fail .detail { padding-left: 1.5rem; font-size: 12px; color: #666; }
     h1 { margin-bottom: 0.5rem; }
     #summary { margin: 1rem 0; font-weight: bold; }
+    h2 { font-size: 1rem; margin: 1.2rem 0 0.2rem; color: #555; }
   </style>
 </head>
 <body>
 <h1>Prose Cleanup Tests</h1>
 <div id="summary"></div>
 <div id="results"></div>
+<script src="../src/cleanup.js"></script>
 <script>
-// ── Functions under test (keep in sync with reader.html) ──────────────────────
-
-function rejoinHyphenatedBreaks(text) {
-  return text.replace(/(\w)-\n(\w)/g, '$1$2');
-}
-
-function collapseIntraWordSpaces(text) {
-  return text.replace(/\b([a-záéíóúüñ] ){3,}[a-záéíóúüñ]\b/gi, m => m.replace(/ /g, ''));
-}
-
-function normalizeWhitespace(text) {
-  return text
-    .replace(/[^\S\n]+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/ \n/g, '\n')
-    .trim();
-}
-
-function stripPageHeaderFooter(text) {
-  const lines = text.split('\n');
-  const isNoise = l => {
-    const t = l.trim();
-    if (!t) return true;
-    if (/^\d+$/.test(t)) return true;
-    if (t.length < 30 && t === t.toUpperCase() && /[A-Z]/.test(t)) return true;
-    return false;
-  };
-  while (lines.length && isNoise(lines[0])) lines.shift();
-  while (lines.length && isNoise(lines[lines.length - 1])) lines.pop();
-  return lines.join('\n');
-}
-
-function applyProseCleanup(text) {
-  text = rejoinHyphenatedBreaks(text);
-  text = collapseIntraWordSpaces(text);
-  text = normalizeWhitespace(text);
-  text = stripPageHeaderFooter(text);
-  return text;
-}
-
-function isBlankPage(text) {
-  return text.replace(/\s/g, '').length < 10;
-}
-
-function extractTitle(filename) {
-  const base = filename
-    .replace(/\.zip$/i, '')
-    .replace(/\s*--\s*Anna['']s Archive\s*$/i, '');
-  const parts = base.split(/\s+--\s+/);
-  return parts[0].trim() || filename;
-}
-
-// ── Test runner ───────────────────────────────────────────────────────────────
 
 const results = [];
 function assert(name, actual, expected) {
   results.push({ name, pass: actual === expected, actual, expected });
 }
+function section(name) {
+  results.push({ section: name });
+}
 
-// rejoinHyphenatedBreaks
-assert('rejoinHyphenatedBreaks: joins hyphenated break',
+// ── rejoinHyphenatedBreaks ────────────────────────────────────────────────────
+section('rejoinHyphenatedBreaks');
+assert('joins hyphenated line break',
   rejoinHyphenatedBreaks('cer-\nemonial'), 'ceremonial');
-assert('rejoinHyphenatedBreaks: no false positive on plain newline',
+assert('handles break at start of word',
+  rejoinHyphenatedBreaks('some-\nthing'), 'something');
+assert('no false positive on plain newline',
   rejoinHyphenatedBreaks('hello\nworld'), 'hello\nworld');
-assert('rejoinHyphenatedBreaks: no false positive on standalone hyphen',
+assert('no false positive on standalone hyphen',
   rejoinHyphenatedBreaks('1-2-3'), '1-2-3');
+assert('no false positive on em-dash',
+  rejoinHyphenatedBreaks('word—word'), 'word—word');
 
-// collapseIntraWordSpaces
-assert('collapseIntraWordSpaces: collapses 5-char spaced sequence',
+// ── collapseIntraWordSpaces ───────────────────────────────────────────────────
+section('collapseIntraWordSpaces');
+assert('collapses 5-char spaced sequence',
   collapseIntraWordSpaces('h e l l o'), 'hello');
-assert('collapseIntraWordSpaces: does not collapse 3-char sequence (legitimate words)',
-  collapseIntraWordSpaces('a o e'), 'a o e');
-assert('collapseIntraWordSpaces: leaves normal words intact',
-  collapseIntraWordSpaces('hello world'), 'hello world');
-assert('collapseIntraWordSpaces: handles accented chars',
+assert('collapses longer spaced sequence',
+  collapseIntraWordSpaces('c e r e m o n i a l'), 'ceremonial');
+assert('handles accented characters',
   collapseIntraWordSpaces('c e r á m i c a'), 'cerámica');
+assert('does not collapse 3-char sequence (could be real words)',
+  collapseIntraWordSpaces('a o e'), 'a o e');
+assert('leaves normal words intact',
+  collapseIntraWordSpaces('hello world'), 'hello world');
+assert('collapses mid-sentence spaced word',
+  collapseIntraWordSpaces('The w o r d was clear.'), 'The word was clear.');
 
-// normalizeWhitespace
-assert('normalizeWhitespace: collapses multiple spaces',
+// ── normalizeWhitespace ───────────────────────────────────────────────────────
+section('normalizeWhitespace');
+assert('collapses multiple spaces',
   normalizeWhitespace('hello   world'), 'hello world');
-assert('normalizeWhitespace: preserves single paragraph break',
+assert('collapses tab to space',
+  normalizeWhitespace('hello\tworld'), 'hello world');
+assert('preserves single paragraph break',
   normalizeWhitespace('a\n\nb'), 'a\n\nb');
-assert('normalizeWhitespace: collapses triple newline to double',
+assert('collapses triple newline to double',
   normalizeWhitespace('a\n\n\nb'), 'a\n\nb');
-assert('normalizeWhitespace: trims leading/trailing whitespace',
+assert('collapses quadruple newline to double',
+  normalizeWhitespace('a\n\n\n\nb'), 'a\n\nb');
+assert('trims leading/trailing whitespace',
   normalizeWhitespace('  hello  '), 'hello');
-assert('normalizeWhitespace: removes trailing space before newline',
+assert('removes trailing space before newline',
   normalizeWhitespace('hello \nworld'), 'hello\nworld');
 
-// stripPageHeaderFooter
-assert('stripPageHeaderFooter: removes leading page number',
+// ── stripPageHeaderFooter ─────────────────────────────────────────────────────
+section('stripPageHeaderFooter');
+assert('removes leading page number',
   stripPageHeaderFooter('42\nhello world'), 'hello world');
-assert('stripPageHeaderFooter: removes trailing page number',
+assert('removes trailing page number',
   stripPageHeaderFooter('hello world\n42'), 'hello world');
-assert('stripPageHeaderFooter: removes short all-caps header',
+assert('removes short all-caps header',
   stripPageHeaderFooter('CHAPTER ONE\nhello world'), 'hello world');
-assert('stripPageHeaderFooter: removes short all-caps footer',
+assert('removes short all-caps footer',
   stripPageHeaderFooter('hello world\nCHAPTER ONE'), 'hello world');
-assert('stripPageHeaderFooter: keeps normal body text',
+assert('keeps normal body text',
   stripPageHeaderFooter('hello world'), 'hello world');
-assert('stripPageHeaderFooter: keeps long mixed-case line',
+assert('keeps long mixed-case line',
   stripPageHeaderFooter('This is a full sentence that is not a header.'),
   'This is a full sentence that is not a header.');
+assert('strips multiple noise lines at top',
+  stripPageHeaderFooter('12\nHEADER\nhello world'), 'hello world');
+assert('handles page with only noise (returns empty)',
+  stripPageHeaderFooter('42\nCHAPTER'), '');
 
-// isBlankPage
-assert('isBlankPage: empty string is blank',
+// ── isBlankPage ───────────────────────────────────────────────────────────────
+section('isBlankPage');
+assert('empty string is blank',
   isBlankPage(''), true);
-assert('isBlankPage: whitespace only is blank',
+assert('whitespace only is blank',
   isBlankPage('   \n  \n  '), true);
-assert('isBlankPage: 9 chars is blank',
+assert('9 non-whitespace chars is blank',
   isBlankPage('123456789'), true);
-assert('isBlankPage: 10 chars is not blank',
+assert('exactly 10 non-whitespace chars is not blank',
   isBlankPage('1234567890'), false);
-assert('isBlankPage: real page content is not blank',
+assert('real page content is not blank',
   isBlankPage('Esta es una página con contenido real.'), false);
 
-// extractTitle
-assert('extractTitle: extracts from AA filename',
+// ── extractTitle ──────────────────────────────────────────────────────────────
+section('extractTitle');
+assert('extracts title from full Anna\'s Archive filename',
   extractTitle("My Book Title -- Author Name -- 2023 -- Anna's Archive.zip"),
   'My Book Title');
-assert('extractTitle: handles filename with no separator',
+assert('handles curly apostrophe variant',
+  extractTitle("My Book -- Author -- Anna’s Archive.zip"),
+  'My Book');
+assert('handles filename with no separator',
   extractTitle('simplebook.zip'), 'simplebook');
-assert('extractTitle: strips .zip extension',
+assert('strips .zip extension',
   extractTitle('Historia Argentina.zip'), 'Historia Argentina');
+
+// ── applyProseCleanup (integration) ──────────────────────────────────────────
+section('applyProseCleanup (integration)');
+assert('rejoins hyphen, collapses spaces, strips header',
+  applyProseCleanup('12\nThe m a n ap-\npeared.\n\nSecond paragraph.'),
+  'The man appeared.\n\nSecond paragraph.');
+assert('empty input stays empty',
+  applyProseCleanup(''), '');
+assert('page number only returns empty',
+  applyProseCleanup('42'), '');
+
+// ── escapeHtml ────────────────────────────────────────────────────────────────
+section('escapeHtml');
+assert('escapes ampersand',
+  escapeHtml('a & b'), 'a &amp; b');
+assert('escapes less-than',
+  escapeHtml('<tag>'), '&lt;tag>');
+assert('escapes greater-than',
+  escapeHtml('a > b'), 'a &gt; b');
+assert('escapes all three in one string',
+  escapeHtml('<a & b>'), '&lt;a &amp; b&gt;');
+assert('leaves plain text unchanged',
+  escapeHtml('hello world'), 'hello world');
 
 // ── Render ────────────────────────────────────────────────────────────────────
 
-const passing = results.filter(r => r.pass).length;
-document.getElementById('summary').textContent = `${passing} / ${results.length} passing`;
-document.getElementById('summary').style.color = passing === results.length ? '#16a34a' : '#dc2626';
+const passing = results.filter(r => r.pass !== undefined && r.pass).length;
+const total   = results.filter(r => r.pass !== undefined).length;
+document.getElementById('summary').textContent = `${passing} / ${total} passing`;
+document.getElementById('summary').style.color = passing === total ? '#16a34a' : '#dc2626';
 
-const html = results.map(r =>
-  `<div class="${r.pass ? 'pass' : 'fail'}">
+const html = results.map(r => {
+  if (r.section !== undefined) {
+    return `<h2>${r.section}</h2>`;
+  }
+  return `<div class="${r.pass ? 'pass' : 'fail'}">
     ${r.pass ? '✓' : '✗'} ${r.name}
     ${!r.pass ? `<div class="detail">expected: ${JSON.stringify(r.expected)}<br>actual:   ${JSON.stringify(r.actual)}</div>` : ''}
-  </div>`
-).join('');
+  </div>`;
+}).join('');
 document.getElementById('results').innerHTML = html;
 </script>
 </body>
