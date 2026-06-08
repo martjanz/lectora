@@ -297,7 +297,7 @@
     return text.replace(/(\w)-\n(\w)/g, '$1$2');
   }
   function collapseIntraWordSpaces(text) {
-    return text.replace(/\b([a-záéíóúüñ] ){2,}[a-záéíóúüñ]\b/gi, m => m.replace(/ /g, ''));
+    return text.replace(/\b([a-záéíóúüñ] ){3,}[a-záéíóúüñ]\b/gi, m => m.replace(/ /g, ''));
   }
   function normalizeWhitespace(text) {
     return text
@@ -328,10 +328,14 @@
   }
   function renderProse(text) {
     const cleaned = applyProseCleanup(text);
-    return cleaned.split(/\n\n+/)
+    const paragraphs = cleaned.split(/\n\n+/)
       .filter(p => p.trim())
       .map(p => `<p>${escapeHtml(p.replace(/\n/g, ' '))}</p>`)
       .join('');
+    if (!paragraphs) {
+      return `<p style="color:var(--accent);font-style:italic">[Page contains no readable text]</p>`;
+    }
+    return paragraphs;
   }
   function renderFaithful(text) {
     return `<pre>${escapeHtml(text)}</pre>`;

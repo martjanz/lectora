@@ -24,7 +24,7 @@ function rejoinHyphenatedBreaks(text) {
 }
 
 function collapseIntraWordSpaces(text) {
-  return text.replace(/\b([a-záéíóúüñ] ){2,}[a-záéíóúüñ]\b/gi, m => m.replace(/ /g, ''));
+  return text.replace(/\b([a-záéíóúüñ] ){3,}[a-záéíóúüñ]\b/gi, m => m.replace(/ /g, ''));
 }
 
 function normalizeWhitespace(text) {
@@ -85,8 +85,10 @@ assert('rejoinHyphenatedBreaks: no false positive on standalone hyphen',
   rejoinHyphenatedBreaks('1-2-3'), '1-2-3');
 
 // collapseIntraWordSpaces
-assert('collapseIntraWordSpaces: collapses spaced chars',
+assert('collapseIntraWordSpaces: collapses 5-char spaced sequence',
   collapseIntraWordSpaces('h e l l o'), 'hello');
+assert('collapseIntraWordSpaces: does not collapse 3-char sequence (legitimate words)',
+  collapseIntraWordSpaces('a o e'), 'a o e');
 assert('collapseIntraWordSpaces: leaves normal words intact',
   collapseIntraWordSpaces('hello world'), 'hello world');
 assert('collapseIntraWordSpaces: handles accented chars',
