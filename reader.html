@@ -277,6 +277,54 @@
     return text.replace(/\s/g, '').length < 10;
   }
 
+  const state = {
+    pages: [],
+    currentPage: 0,
+    filename: '',
+    mode: 'prose',
+    fontSize: 18,
+    dark: false,
+  };
+
+  function savePosition() {
+    localStorage.setItem('lector_pos_' + state.filename, state.currentPage);
+  }
+  function loadPosition(filename) {
+    return parseInt(localStorage.getItem('lector_pos_' + filename)) || 0;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function renderCurrentPage() {
+    const content = document.getElementById('page-content');
+    const text = state.pages[state.currentPage] || '';
+    content.className = state.mode;
+    // Prose rendering added in Task 5; for now, render as faithful in both modes
+    content.innerHTML = `<pre>${escapeHtml(text)}</pre>`;
+  }
+
+  function updateUI() {
+    document.getElementById('reader-page-info').textContent =
+      `${state.currentPage + 1} / ${state.pages.length}`;
+    const pct = state.pages.length <= 1 ? 0
+      : (state.currentPage / (state.pages.length - 1)) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('mode-btn').textContent =
+      state.mode === 'prose' ? 'Prose' : 'Faithful';
+    document.getElementById('dark-btn').textContent = state.dark ? '☾' : '☀';
+  }
+
+  function navigate(delta) {
+    const next = state.currentPage + delta;
+    if (next < 0 || next >= state.pages.length) return;
+    state.currentPage = next;
+    renderCurrentPage();
+    updateUI();
+    savePosition();
+  }
+
   async function loadZipOrBook(blob, filename) {
     const reader = new zip.ZipReader(new zip.BlobReader(blob));
     try {
@@ -305,11 +353,18 @@
   }
 
   function showReader(pages, filename, title) {
+    state.pages = pages;
+    state.filename = filename;
+    state.mode = 'prose';
+    state.currentPage = loadPosition(filename);
+    if (state.currentPage >= pages.length) state.currentPage = 0;
+
     document.getElementById('drop-area').style.display = 'none';
     document.getElementById('reader').style.display = 'flex';
     document.getElementById('reader-title').textContent = title;
-    document.getElementById('reader-page-info').textContent = `1 / ${pages.length}`;
-    document.getElementById('page-content').textContent = pages[0] || '';
+
+    renderCurrentPage();
+    updateUI();
   }
 
   window.addEventListener('error', e => displayError(e.error?.message || e.message));
@@ -330,6 +385,28 @@
     dropArea.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', () => {
       if (fileInput.files.length > 0) handleFileUpload(fileInput.files[0]);
+    });
+
+    document.getElementById('prev-btn').addEventListener('click', () => navigate(-1));
+    document.getElementById('next-btn').addEventListener('click', () => navigate(1));
+    document.getElementById('page-left-zone').addEventListener('click', () => navigate(-1));
+    document.getElementById('page-right-zone').addEventListener('click', () => navigate(1));
+
+    document.getElementById('progress-bar-container').addEventListener('click', e => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const ratio = (e.clientX - rect.left) / rect.width;
+      state.currentPage = Math.round(ratio * (state.pages.length - 1));
+      renderCurrentPage();
+      updateUI();
+      savePosition();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (document.getElementById('reader').style.display === 'none') return;
+      if      (['ArrowRight', 'l', ' '].includes(e.key)) { e.preventDefault(); navigate(1); }
+      else if (['ArrowLeft',  'h'     ].includes(e.key)) { e.preventDefault(); navigate(-1); }
+      else if (e.key === 'Home') { state.currentPage = 0; renderCurrentPage(); updateUI(); savePosition(); }
+      else if (e.key === 'End')  { state.currentPage = state.pages.length - 1; renderCurrentPage(); updateUI(); savePosition(); }
     });
   });
 </script>
