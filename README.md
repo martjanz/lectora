@@ -1,4 +1,4 @@
-# Lector
+# Lectora
 
 A single-file offline book reader for Anna's Archive ZIP+TXT books, with fallback support for PDF, EPUB, DjVu, and comic formats.
 
@@ -24,7 +24,7 @@ No server required — open `reader.html` directly in any modern browser.
 
 ## ZIP+TXT Reader
 
-Anna's Archive books downloaded as ZIP files contain one `.txt` file per scanned page. Lector reads these directly with two display modes:
+Anna's Archive books downloaded as ZIP files contain one `.txt` file per scanned page. Lectora reads these directly with two display modes:
 
 **Prose mode** (default) — OCR cleanup pipeline runs on each page:
 - Rejoins hyphenated line breaks (`cer-\nemonial` → `ceremonial`)
