@@ -77,17 +77,14 @@ window.addEventListener('message', e => {
 async function loadViewerByUrl(url, ext) {
   const vc = document.getElementById('viewer-container');
   if (SUPPORTED.pdfjs.includes(ext)) {
+    // Use the browser's built-in PDF viewer via a direct blob URL iframe.
+    // The /pdfjs/ path only exists on Anna's Archive's server and is unavailable standalone.
     showViewer();
-    vc.innerHTML = `<iframe src="/pdfjs/web/viewer.html?file=${encodeURI(url)}" class="viewer-frame" style="width:100%;height:100%;border:none"></iframe>`;
-    attachFrameListener();
+    vc.innerHTML = `<iframe src="${url}" class="viewer-frame" style="width:100%;height:100%;border:none"></iframe>`;
   } else if (SUPPORTED.foliatejs.includes(ext)) {
-    showViewer();
-    vc.innerHTML = `<iframe id="foliate-iframe" src="/foliatejs/reader.html?url=${encodeURI(url)}" class="viewer-frame" style="width:100%;height:100%;border:none"></iframe>`;
-    attachFrameListener();
+    displayError('EPUB/FB2/MOBI reading requires the Anna\'s Archive server environment and is not available in standalone mode.');
   } else if (SUPPORTED.kthoom.includes(ext)) {
-    showViewer();
-    vc.innerHTML = `<iframe src="/kthoom/index.html?bookUri=${encodeURI(url)}" class="viewer-frame" style="width:100%;height:100%;border:none"></iframe>`;
-    attachFrameListener();
+    displayError('CBZ/CBR reading requires the Anna\'s Archive server environment and is not available in standalone mode.');
   } else if (ext === 'rar') {
     loadWithVillain(url);
   } else if (ext === 'zip') {
