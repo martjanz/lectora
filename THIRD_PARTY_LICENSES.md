@@ -134,3 +134,32 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 > publicly, verify the license terms before including this file.
 >
 > For personal offline use, Anna's Archive makes their viewer freely available.
+
+---
+
+## PDF.js
+**Version:** 6.0.227
+**License:** Apache 2.0
+**Copyright:** Mozilla Foundation
+**Source:** https://github.com/mozilla/pdf.js
+
+---
+
+## foliate-js
+**License:** MIT
+**Copyright:** John Factotum
+**Source:** https://github.com/johnfactotum/foliate-js
+
+---
+
+## kthoom
+**License:** MIT
+**Copyright:** CodeDread
+**Source:** https://github.com/codedread/kthoom
+
+---
+
+## libarchive.js
+**License:** MIT
+**Copyright:** Nika Begiashvili
+**Source:** https://github.com/nika-begiashvili/libarchivejs

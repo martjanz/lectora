@@ -1,5 +1,6 @@
 // Requires cleanup.js to be loaded first (pure functions in global scope).
 // Requires vendor scripts: react, react-dom, reakit, djvu.js, djvu_viewer.js, villain.js, zip.min.js
+// All format viewers live in vendor/ and are served as static files (works on GitHub Pages and locally).
 
 const SUPPORTED = {
   pdfjs:     ['pdf'],
@@ -43,7 +44,7 @@ function loadWithVillain(file) {
     source: file,
     style: { width: '100%', height: '100%' },
     options: { allowFullScreen: true, autoHideControls: false },
-    workerUrl: '/libarchivejs/libarchivejs-1.3.0/dist/worker-bundle.js',
+    workerUrl: './vendor/libarchivejs/worker-bundle.js',
   }));
 }
 
@@ -77,14 +78,17 @@ window.addEventListener('message', e => {
 async function loadViewerByUrl(url, ext) {
   const vc = document.getElementById('viewer-container');
   if (SUPPORTED.pdfjs.includes(ext)) {
-    // Use the browser's built-in PDF viewer via a direct blob URL iframe.
-    // The /pdfjs/ path only exists on Anna's Archive's server and is unavailable standalone.
     showViewer();
-    vc.innerHTML = `<iframe src="${url}" class="viewer-frame" style="width:100%;height:100%;border:none"></iframe>`;
+    vc.innerHTML = `<iframe src="./vendor/pdfjs/web/viewer.html?file=${encodeURIComponent(url)}" class="viewer-frame" style="width:100%;height:100%;border:none"></iframe>`;
+    attachFrameListener();
   } else if (SUPPORTED.foliatejs.includes(ext)) {
-    displayError('EPUB/FB2/MOBI reading requires the Anna\'s Archive server environment and is not available in standalone mode.');
+    showViewer();
+    vc.innerHTML = `<iframe id="foliate-iframe" src="./vendor/foliatejs/reader.html?url=${encodeURIComponent(url)}" class="viewer-frame" style="width:100%;height:100%;border:none"></iframe>`;
+    attachFrameListener();
   } else if (SUPPORTED.kthoom.includes(ext)) {
-    displayError('CBZ/CBR reading requires the Anna\'s Archive server environment and is not available in standalone mode.');
+    showViewer();
+    vc.innerHTML = `<iframe src="./vendor/kthoom/index.html?bookUri=${encodeURIComponent(url)}" class="viewer-frame" style="width:100%;height:100%;border:none"></iframe>`;
+    attachFrameListener();
   } else if (ext === 'rar') {
     loadWithVillain(url);
   } else if (ext === 'zip') {
