@@ -104,12 +104,14 @@
     const w = iframe.contentWindow;
     w.addEventListener('unhandledrejection', e => displayError(e.reason.message));
     w.addEventListener('error', e => displayError((e.error || e).message));
-    w.EventTarget.prototype.addEventListener = new Proxy(w.EventTarget.prototype.addEventListener, {
-      apply(target, that, args) {
-        if (args[0] === 'drop') return;
-        return Reflect.apply(...arguments);
-      }
-    });
+    try {
+      w.EventTarget.prototype.addEventListener = new Proxy(w.EventTarget.prototype.addEventListener, {
+        apply(target, that, args) {
+          if (args[0] === 'drop') return;
+          return Reflect.apply(...arguments);
+        }
+      });
+    } catch (_) {}
   }
 
   function loadWithVillain(file) {
