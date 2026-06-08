@@ -287,7 +287,8 @@
   };
 
   function savePosition() {
-    localStorage.setItem('lector_pos_' + state.filename, state.currentPage);
+    try { localStorage.setItem('lector_pos_' + state.filename, state.currentPage); }
+    catch { /* best-effort */ }
   }
   function loadPosition(filename) {
     return parseInt(localStorage.getItem('lector_pos_' + filename)) || 0;
@@ -396,14 +397,19 @@
       let entries = await reader.getEntries();
       entries.sort((a, b) => a.filename.localeCompare(b.filename));
 
-      if (entries.length === 0) { displayError('Zip file is empty.'); return; }
-      if (!entries.every(e => !e.directory && e.filename.endsWith('.txt'))) {
+      const textEntries = entries.filter(e =>
+        !e.directory &&
+        !e.filename.startsWith('__MACOSX') &&
+        !e.filename.split('/').pop().startsWith('._')
+      );
+      if (textEntries.length === 0) { displayError('Zip file is empty.'); return; }
+      if (!textEntries.every(e => e.filename.endsWith('.txt'))) {
         loadWithVillain(new File([blob], filename || 'archive.zip', { type: blob.type }));
         return;
       }
 
       const pages = [];
-      for (const entry of entries) {
+      for (const entry of textEntries) {
         const text = await entry.getData(new zip.TextWriter());
         if (!isBlankPage(text)) pages.push(text);
       }
