@@ -101,17 +101,19 @@
 
   function attachFrameListener() {
     const iframe = document.querySelector('.viewer-frame');
-    const w = iframe.contentWindow;
-    w.addEventListener('unhandledrejection', e => displayError(e.reason.message));
-    w.addEventListener('error', e => displayError((e.error || e).message));
-    try {
-      w.EventTarget.prototype.addEventListener = new Proxy(w.EventTarget.prototype.addEventListener, {
-        apply(target, that, args) {
-          if (args[0] === 'drop') return;
-          return Reflect.apply(...arguments);
-        }
-      });
-    } catch (_) {}
+    iframe.addEventListener('load', () => {
+      try {
+        const w = iframe.contentWindow;
+        w.addEventListener('unhandledrejection', e => displayError(e.reason?.message));
+        w.addEventListener('error', e => displayError((e.error || e).message));
+        w.EventTarget.prototype.addEventListener = new Proxy(w.EventTarget.prototype.addEventListener, {
+          apply(target, that, args) {
+            if (args[0] === 'drop') return;
+            return Reflect.apply(...arguments);
+          }
+        });
+      } catch (_) {}
+    });
   }
 
   function loadWithVillain(file) {
@@ -147,10 +149,10 @@
       return new File([await res.blob()], info.name, { type: info.type });
     return new File([await res.blob()], new URL(res.url).pathname);
   };
-  window.onmessage = e => {
+  window.addEventListener('message', e => {
     const f = document.getElementById('foliate-iframe');
     if (e.data === 'refocus-iframe' && f) f.contentWindow.focus();
-  };
+  });
 
   async function loadViewerByUrl(url, ext) {
     const vc = document.getElementById('viewer-container');
@@ -170,7 +172,7 @@
       loadWithVillain(url);
     } else if (ext === 'zip') {
       const blob = await (await fetch(url)).blob();
-      await loadZipOrBook(blob, '');
+      await loadZipOrBook(blob, url.split('/').pop() || '');
     } else {
       displayError('File type not supported');
     }
@@ -184,9 +186,7 @@
     }
     window.fileInfoForMonkeyPatchedFetchFile = { name: file.name, type: file.type };
     if (ext === 'zip') {
-      const buf = await file.arrayBuffer();
-      const blob = new Blob([buf], { type: file.type });
-      await loadZipOrBook(blob, file.name);
+      await loadZipOrBook(file, file.name);
     } else {
       await loadViewerByUrl(URL.createObjectURL(file), ext);
     }
