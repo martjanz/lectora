@@ -298,10 +298,12 @@
     catch { return {}; }
   }
   function savePrefs() {
-    localStorage.setItem('lector_prefs', JSON.stringify({
-      fontSize: state.fontSize,
-      dark: state.dark,
-    }));
+    try {
+      localStorage.setItem('lector_prefs', JSON.stringify({
+        fontSize: state.fontSize,
+        dark: state.dark,
+      }));
+    } catch { /* storage unavailable — preferences are best-effort */ }
   }
   function applyPrefs() {
     document.body.setAttribute('data-dark', state.dark);
