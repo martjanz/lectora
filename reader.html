@@ -47,6 +47,56 @@
 
     #viewer-container { position: fixed; inset: 0; display: none; }
     #reader { position: fixed; inset: 0; display: none; flex-direction: column; }
+
+    button.reader-btn {
+      background: none; border: 1px solid var(--border); color: var(--text);
+      padding: 3px 9px; border-radius: 4px; cursor: pointer; font-size: 13px; white-space: nowrap;
+    }
+    button.reader-btn:hover { background: var(--border); }
+
+    #reader-header {
+      height: 48px; flex-shrink: 0;
+      display: flex; align-items: center; gap: 8px; padding: 0 12px;
+      background: var(--bar-bg); border-bottom: 1px solid var(--border);
+    }
+    #reader-title { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #reader-page-info { font-size: 13px; color: var(--accent); white-space: nowrap; }
+
+    #page-area { flex: 1; overflow: hidden; position: relative; }
+    #page-left-zone, #page-right-zone {
+      position: absolute; top: 0; bottom: 0; width: 15%; z-index: 1; cursor: pointer;
+    }
+    #page-left-zone { left: 0; }
+    #page-right-zone { right: 0; }
+
+    #page-content {
+      position: absolute; inset: 0; overflow-y: auto;
+      padding: 2.5rem 2rem;
+      font-size: var(--font-size);
+    }
+    #page-content.prose {
+      font-family: Georgia, ui-serif, serif;
+      line-height: 1.7;
+    }
+    #page-content.prose p {
+      max-width: 65ch; margin: 0 auto 1em;
+    }
+    #page-content.faithful {
+      font-family: ui-monospace, 'Courier New', monospace;
+      white-space: pre-wrap; line-height: 1.6;
+      max-width: 80ch; margin: 0 auto;
+    }
+
+    #reader-footer {
+      height: 44px; flex-shrink: 0;
+      display: flex; align-items: center; gap: 8px; padding: 0 12px;
+      background: var(--bar-bg); border-top: 1px solid var(--border);
+    }
+    #progress-bar-container {
+      flex: 1; height: 6px; background: var(--border); border-radius: 3px; cursor: pointer;
+    }
+    #progress-bar { height: 100%; background: var(--accent); border-radius: 3px; width: 0%; transition: width 0.1s; }
+    #kb-hint { font-size: 11px; color: var(--accent); }
   </style>
   <script src="./Annas-viewer_files/react.production.min.js"></script>
   <script src="./Annas-viewer_files/react-dom.production.min.js"></script>
@@ -75,7 +125,27 @@
 </div>
 
 <div id="viewer-container"></div>
-<div id="reader"><!-- filled in Task 3 --></div>
+<div id="reader">
+  <header id="reader-header">
+    <span id="reader-title"></span>
+    <span id="reader-page-info"></span>
+    <button class="reader-btn" id="mode-btn">Prose</button>
+    <button class="reader-btn" id="font-dec">−</button>
+    <button class="reader-btn" id="font-inc">+</button>
+    <button class="reader-btn" id="dark-btn">☀</button>
+  </header>
+  <div id="page-area">
+    <div id="page-left-zone"></div>
+    <div id="page-content"></div>
+    <div id="page-right-zone"></div>
+  </div>
+  <footer id="reader-footer">
+    <button class="reader-btn" id="prev-btn">←</button>
+    <div id="progress-bar-container"><div id="progress-bar"></div></div>
+    <button class="reader-btn" id="next-btn">→</button>
+    <span id="kb-hint">← → · h l · space · f: mode · d: dark · +−: font</span>
+  </footer>
+</div>
 
 <script>
   const SUPPORTED = {
@@ -232,9 +302,12 @@
     }
   }
 
-  // Stub — replaced in Task 3
   function showReader(pages, filename, title) {
-    alert(`Loaded "${title}": ${pages.length} pages`);
+    document.getElementById('drop-area').style.display = 'none';
+    document.getElementById('reader').style.display = 'flex';
+    document.getElementById('reader-title').textContent = title;
+    document.getElementById('reader-page-info').textContent = `1 / ${pages.length}`;
+    document.getElementById('page-content').textContent = pages[0] || '';
   }
 
   window.addEventListener('error', e => displayError(e.error?.message || e.message));
