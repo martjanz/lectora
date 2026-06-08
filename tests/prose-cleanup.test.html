@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Prose Cleanup Tests</title>
+  <style>
+    body { font-family: monospace; padding: 1rem; line-height: 1.6; }
+    .pass { color: #16a34a; }
+    .fail { color: #dc2626; }
+    .fail .detail { padding-left: 1.5rem; font-size: 12px; color: #666; }
+    h1 { margin-bottom: 0.5rem; }
+    #summary { margin: 1rem 0; font-weight: bold; }
+  </style>
+</head>
+<body>
+<h1>Prose Cleanup Tests</h1>
+<div id="summary"></div>
+<div id="results"></div>
+<script>
+// ── Functions under test (keep in sync with reader.html) ──────────────────────
+
+function rejoinHyphenatedBreaks(text) {
+  return text.replace(/(\w)-\n(\w)/g, '$1$2');
+}
+
+function collapseIntraWordSpaces(text) {
+  return text.replace(/\b([a-záéíóúüñ] ){2,}[a-záéíóúüñ]\b/gi, m => m.replace(/ /g, ''));
+}
+
+function normalizeWhitespace(text) {
+  return text
+    .replace(/[^\S\n]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/ \n/g, '\n')
+    .trim();
+}
+
+function stripPageHeaderFooter(text) {
+  const lines = text.split('\n');
+  const isNoise = l => {
+    const t = l.trim();
+    if (!t) return true;
+    if (/^\d+$/.test(t)) return true;
+    if (t.length < 30 && t === t.toUpperCase() && /[A-Z]/.test(t)) return true;
+    return false;
+  };
+  while (lines.length && isNoise(lines[0])) lines.shift();
+  while (lines.length && isNoise(lines[lines.length - 1])) lines.pop();
+  return lines.join('\n');
+}
+
+function applyProseCleanup(text) {
+  text = rejoinHyphenatedBreaks(text);
+  text = collapseIntraWordSpaces(text);
+  text = normalizeWhitespace(text);
+  text = stripPageHeaderFooter(text);
+  return text;
+}
+
+function isBlankPage(text) {
+  return text.replace(/\s/g, '').length < 10;
+}
+
+function extractTitle(filename) {
+  const base = filename
+    .replace(/\.zip$/i, '')
+    .replace(/\s*--\s*Anna['']s Archive\s*$/i, '');
+  const parts = base.split(/\s+--\s+/);
+  return parts[0].trim() || filename;
+}
+
+// ── Test runner ───────────────────────────────────────────────────────────────
+
+const results = [];
+function assert(name, actual, expected) {
+  results.push({ name, pass: actual === expected, actual, expected });
+}
+
+// rejoinHyphenatedBreaks
+assert('rejoinHyphenatedBreaks: joins hyphenated break',
+  rejoinHyphenatedBreaks('cer-\nemonial'), 'ceremonial');
+assert('rejoinHyphenatedBreaks: no false positive on plain newline',
+  rejoinHyphenatedBreaks('hello\nworld'), 'hello\nworld');
+assert('rejoinHyphenatedBreaks: no false positive on standalone hyphen',
+  rejoinHyphenatedBreaks('1-2-3'), '1-2-3');
+
+// collapseIntraWordSpaces
+assert('collapseIntraWordSpaces: collapses spaced chars',
+  collapseIntraWordSpaces('h e l l o'), 'hello');
+assert('collapseIntraWordSpaces: leaves normal words intact',
+  collapseIntraWordSpaces('hello world'), 'hello world');
+assert('collapseIntraWordSpaces: handles accented chars',
+  collapseIntraWordSpaces('c e r á m i c a'), 'cerámica');
+
+// normalizeWhitespace
+assert('normalizeWhitespace: collapses multiple spaces',
+  normalizeWhitespace('hello   world'), 'hello world');
+assert('normalizeWhitespace: preserves single paragraph break',
+  normalizeWhitespace('a\n\nb'), 'a\n\nb');
+assert('normalizeWhitespace: collapses triple newline to double',
+  normalizeWhitespace('a\n\n\nb'), 'a\n\nb');
+assert('normalizeWhitespace: trims leading/trailing whitespace',
+  normalizeWhitespace('  hello  '), 'hello');
+assert('normalizeWhitespace: removes trailing space before newline',
+  normalizeWhitespace('hello \nworld'), 'hello\nworld');
+
+// stripPageHeaderFooter
+assert('stripPageHeaderFooter: removes leading page number',
+  stripPageHeaderFooter('42\nhello world'), 'hello world');
+assert('stripPageHeaderFooter: removes trailing page number',
+  stripPageHeaderFooter('hello world\n42'), 'hello world');
+assert('stripPageHeaderFooter: removes short all-caps header',
+  stripPageHeaderFooter('CHAPTER ONE\nhello world'), 'hello world');
+assert('stripPageHeaderFooter: removes short all-caps footer',
+  stripPageHeaderFooter('hello world\nCHAPTER ONE'), 'hello world');
+assert('stripPageHeaderFooter: keeps normal body text',
+  stripPageHeaderFooter('hello world'), 'hello world');
+assert('stripPageHeaderFooter: keeps long mixed-case line',
+  stripPageHeaderFooter('This is a full sentence that is not a header.'),
+  'This is a full sentence that is not a header.');
+
+// isBlankPage
+assert('isBlankPage: empty string is blank',
+  isBlankPage(''), true);
+assert('isBlankPage: whitespace only is blank',
+  isBlankPage('   \n  \n  '), true);
+assert('isBlankPage: 9 chars is blank',
+  isBlankPage('123456789'), true);
+assert('isBlankPage: 10 chars is not blank',
+  isBlankPage('1234567890'), false);
+assert('isBlankPage: real page content is not blank',
+  isBlankPage('Esta es una página con contenido real.'), false);
+
+// extractTitle
+assert('extractTitle: extracts from AA filename',
+  extractTitle("My Book Title -- Author Name -- 2023 -- Anna's Archive.zip"),
+  'My Book Title');
+assert('extractTitle: handles filename with no separator',
+  extractTitle('simplebook.zip'), 'simplebook');
+assert('extractTitle: strips .zip extension',
+  extractTitle('Historia Argentina.zip'), 'Historia Argentina');
+
+// ── Render ────────────────────────────────────────────────────────────────────
+
+const passing = results.filter(r => r.pass).length;
+document.getElementById('summary').textContent = `${passing} / ${results.length} passing`;
+document.getElementById('summary').style.color = passing === results.length ? '#16a34a' : '#dc2626';
+
+const html = results.map(r =>
+  `<div class="${r.pass ? 'pass' : 'fail'}">
+    ${r.pass ? '✓' : '✗'} ${r.name}
+    ${!r.pass ? `<div class="detail">expected: ${JSON.stringify(r.expected)}<br>actual:   ${JSON.stringify(r.actual)}</div>` : ''}
+  </div>`
+).join('');
+document.getElementById('results').innerHTML = html;
+</script>
+</body>
+</html>

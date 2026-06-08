@@ -293,6 +293,50 @@
     return parseInt(localStorage.getItem('lector_pos_' + filename)) || 0;
   }
 
+  function rejoinHyphenatedBreaks(text) {
+    return text.replace(/(\w)-\n(\w)/g, '$1$2');
+  }
+  function collapseIntraWordSpaces(text) {
+    return text.replace(/\b([a-záéíóúüñ] ){2,}[a-záéíóúüñ]\b/gi, m => m.replace(/ /g, ''));
+  }
+  function normalizeWhitespace(text) {
+    return text
+      .replace(/[^\S\n]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .replace(/ \n/g, '\n')
+      .trim();
+  }
+  function stripPageHeaderFooter(text) {
+    const lines = text.split('\n');
+    const isNoise = l => {
+      const t = l.trim();
+      if (!t) return true;
+      if (/^\d+$/.test(t)) return true;
+      if (t.length < 30 && t === t.toUpperCase() && /[A-Z]/.test(t)) return true;
+      return false;
+    };
+    while (lines.length && isNoise(lines[0])) lines.shift();
+    while (lines.length && isNoise(lines[lines.length - 1])) lines.pop();
+    return lines.join('\n');
+  }
+  function applyProseCleanup(text) {
+    text = rejoinHyphenatedBreaks(text);
+    text = collapseIntraWordSpaces(text);
+    text = normalizeWhitespace(text);
+    text = stripPageHeaderFooter(text);
+    return text;
+  }
+  function renderProse(text) {
+    const cleaned = applyProseCleanup(text);
+    return cleaned.split(/\n\n+/)
+      .filter(p => p.trim())
+      .map(p => `<p>${escapeHtml(p.replace(/\n/g, ' '))}</p>`)
+      .join('');
+  }
+  function renderFaithful(text) {
+    return `<pre>${escapeHtml(text)}</pre>`;
+  }
+
   function escapeHtml(str) {
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
@@ -301,8 +345,7 @@
     const content = document.getElementById('page-content');
     const text = state.pages[state.currentPage] || '';
     content.className = state.mode;
-    // Prose rendering added in Task 5; for now, render as faithful in both modes
-    content.innerHTML = `<pre>${escapeHtml(text)}</pre>`;
+    content.innerHTML = state.mode === 'prose' ? renderProse(text) : renderFaithful(text);
   }
 
   function updateUI() {
@@ -392,6 +435,12 @@
     document.getElementById('page-left-zone').addEventListener('click', () => navigate(-1));
     document.getElementById('page-right-zone').addEventListener('click', () => navigate(1));
 
+    document.getElementById('mode-btn').addEventListener('click', () => {
+      state.mode = state.mode === 'prose' ? 'faithful' : 'prose';
+      renderCurrentPage();
+      updateUI();
+    });
+
     document.getElementById('progress-bar-container').addEventListener('click', e => {
       if (!state.pages.length) return;
       const rect = e.currentTarget.getBoundingClientRect();
@@ -409,6 +458,7 @@
       else if (['ArrowLeft',  'h'     ].includes(e.key)) { e.preventDefault(); navigate(-1); }
       else if (e.key === 'Home') { state.currentPage = 0; renderCurrentPage(); updateUI(); savePosition(); }
       else if (e.key === 'End')  { state.currentPage = state.pages.length - 1; renderCurrentPage(); updateUI(); savePosition(); }
+      else if (e.key === 'f') { state.mode = state.mode === 'prose' ? 'faithful' : 'prose'; renderCurrentPage(); updateUI(); }
     });
   });
 </script>
